@@ -1,47 +1,83 @@
 # ProJson
 
-ProJson is a Kotlin library for converting Kotlin objects into JSON.
+ProJson is a Kotlin library for converting Kotlin objects into JSON using reflection.
 
-The project supports JSON generation, object serialization through reflection, JSON manipulation and object references.
-
-## Features
+The library supports:
 
 - JSON objects
 - JSON arrays
-- Primitive JSON values
+- Primitive values
 - Reflection-based serialization
-- Pretty printed JSON output
-- Object identifiers using `$id`
-- Object references using `$ref`
-- `@Reference`
-- `@JsonProperty`
-- `@JsonIgnore`
-- JSON tree traversal
-- Object and array manipulation
+- Object identifiers (`$id`)
+- Object references (`$ref`)
+- Pretty printed output
+- JSON manipulation
+- Custom annotations
 
-## Basic Example
+---
+
+# Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/ProJson.git
+```
+
+Open the project using IntelliJ IDEA.
+
+---
+
+# Project Structure
+
+```text
+src/main/kotlin/projson/
+
+    ProJson.kt
+    JsonValue.kt
+    JsonObject.kt
+    JsonArray.kt
+    JsonPrimitive.kt
+    JsonReference.kt
+
+    Reference.kt
+    JsonProperty.kt
+    JsonIgnore.kt
+```
+
+---
+
+# Basic Usage
+
+Create a Kotlin object:
 
 ```kotlin
 import projson.*
 
 data class Date(
-    val day: Int,
-    val month: Int,
-    val year: Int
+    val day:Int,
+    val month:Int,
+    val year:Int
 )
+```
 
-fun main() {
+Convert into JSON:
 
-    val date = Date(
-        31,
-        4,
-        2026
-    )
+```kotlin
+fun main(){
 
-    println(
+    val date=
+        Date(
+            31,
+            4,
+            2026
+        )
+
+    val json=
         ProJson()
             .toJsonString(date)
-    )
+
+    println(json)
 }
 ```
 
@@ -49,15 +85,216 @@ Output:
 
 ```json
 {
-    "$id": "generated-id",
-    "$type": "Date",
-    "day": 31,
-    "month": 4,
-    "year": 2026
+    "$id":"generated-id",
+    "$type":"Date",
+    "day":31,
+    "month":4,
+    "year":2026
 }
 ```
 
-## References
+---
+
+# Primitive Values
+
+ProJson automatically converts primitive values.
+
+```kotlin
+println(
+    ProJson()
+        .toJsonString(
+            "Miguel"
+        )
+)
+
+println(
+    ProJson()
+        .toJsonString(
+            22
+        )
+)
+
+println(
+    ProJson()
+        .toJsonString(
+            true
+        )
+)
+```
+
+Output:
+
+```json
+"Miguel"
+
+22
+
+true
+```
+
+---
+
+# Working with Arrays
+
+Collections automatically become JSON arrays.
+
+```kotlin
+val list=
+    listOf(
+        "Java",
+        null,
+        "Kotlin"
+    )
+
+println(
+    ProJson()
+        .toJsonString(
+            list
+        )
+)
+```
+
+Output:
+
+```json
+[
+    "Java",
+    null,
+    "Kotlin"
+]
+```
+
+---
+
+# Working with Maps
+
+Maps become JSON objects.
+
+```kotlin
+val map=
+    mapOf(
+        "name" to "Miguel",
+        "age" to 22
+    )
+
+println(
+    ProJson()
+        .toJsonString(map)
+)
+```
+
+Output:
+
+```json
+{
+    "name":"Miguel",
+    "age":22
+}
+```
+
+---
+
+# JsonObject Manipulation
+
+Objects can be modified after creation.
+
+```kotlin
+val date=
+    Date(
+        31,
+        4,
+        2026
+    )
+
+val json=
+    ProJson()
+        .toJson(date)
+            as JsonObject
+
+json.setProperty(
+    "year",
+    2027
+)
+
+json.removeProperty(
+    "month"
+)
+
+println(json)
+```
+
+Output:
+
+```json
+{
+    "$id":"id",
+    "$type":"Date",
+    "day":31,
+    "year":2027
+}
+```
+
+---
+
+# JsonArray Manipulation
+
+Arrays support modifications.
+
+```kotlin
+val array=
+    ProJson()
+        .toJson(
+            listOf(
+                "a",
+                "b"
+            )
+        ) as JsonArray
+
+array.add("c")
+
+array.modifyAt(
+    1,
+    "changed"
+)
+
+array.removeAt(0)
+
+println(array)
+```
+
+Output:
+
+```json
+["changed","c"]
+```
+
+---
+
+# Traversing JSON Trees
+
+ProJson supports recursive traversal.
+
+```kotlin
+json.traverse {
+
+    println(it)
+
+}
+```
+
+This visits:
+
+- objects
+- arrays
+- primitive values
+- nested nodes
+
+---
+
+# References
+
+Fields annotated with `@Reference`
+generate object references.
 
 ```kotlin
 class Task(
@@ -69,7 +306,6 @@ class Task(
     @field:Reference
     val dependencies:
         List<Task>
-
 )
 ```
 
@@ -79,14 +315,22 @@ Example:
 val t1=
     Task(
         "T1",
-        Date(30,2,2026),
+        Date(
+            30,
+            2,
+            2026
+        ),
         emptyList()
     )
 
 val t2=
     Task(
         "T2",
-        Date(31,4,2026),
+        Date(
+            31,
+            4,
+            2026
+        ),
         emptyList()
     )
 
@@ -94,7 +338,10 @@ val t3=
     Task(
         "T3",
         null,
-        listOf(t1,t2)
+        listOf(
+            t1,
+            t2
+        )
     )
 
 println(
@@ -112,34 +359,16 @@ println(
 Output:
 
 ```json
-[
-    {
-        "$id":"uuid",
-        "$type":"Task",
-        "description":"T1"
-    },
-    {
-        "$id":"uuid",
-        "$type":"Task",
-        "description":"T2"
-    },
-    {
-        "$id":"uuid",
-        "$type":"Task",
-        "description":"T3",
-        "dependencies":[
-            {
-                "$ref":"uuid"
-            },
-            {
-                "$ref":"uuid"
-            }
-        ]
-    }
-]
+{
+    "$ref":"generated-id"
+}
 ```
 
-## JsonProperty
+---
+
+# JsonProperty
+
+Allows custom property names.
 
 ```kotlin
 class Task(
@@ -147,7 +376,9 @@ class Task(
     @field:JsonProperty(
         "desc"
     )
-    val description:String
+
+    val description:
+        String
 )
 ```
 
@@ -159,7 +390,11 @@ Output:
 }
 ```
 
-## JsonIgnore
+---
+
+# JsonIgnore
+
+Ignores fields.
 
 ```kotlin
 class Task(
@@ -169,17 +404,21 @@ class Task(
 )
 ```
 
-The field will not appear in the generated JSON.
+The field will not appear.
 
-## Running Tests
+---
 
-Run:
+# Running Tests
+
+Run all tests:
 
 ```bash
 gradlew test
 ```
 
-## Build
+---
+
+# Build
 
 Generate JAR:
 
@@ -187,12 +426,14 @@ Generate JAR:
 gradlew build
 ```
 
-JAR location:
+Output location:
 
 ```text
 build/libs/
 ```
 
-## Author
+---
+
+# Author
 
 Miguel Bento
